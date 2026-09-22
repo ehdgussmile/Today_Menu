@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>오늘 뭐 먹지?</title>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    body {
+      margin: 0;
+
+      font-family: Arial, sans-serif;
+
+      background: #f7f4ef;
+
+      color: #333;
+
+      min-height: 100vh;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      padding: 20px;
+    }
+
+
+    /* =========================
+       전체 앱
+    ========================= */
+
+    .app {
+      width: 100%;
+      max-width: 520px;
+
+      background: #ffffff;
+
+      border-radius: 26px;
+
+      padding: 38px 32px;
+
+      box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.08);
+
+      text-align: center;
+    }
+
+
+    /* =========================
+       제목
+    ========================= */
+
+    h1 {
+      margin: 0;
+
+      font-size: 32px;
+
+      font-weight: 700;
+
+      color: #222;
+
+      letter-spacing: -1px;
+    }
+
+
+    .subtitle {
+      margin-top: 10px;
+      margin-bottom: 30px;
+
+      font-size: 15px;
+
+      color: #999;
+    }
+
+
+    /* =========================
+       카테고리
+    ========================= */
+
+    .categories {
+      display: flex;
+
+      flex-wrap: wrap;
+
+      justify-content: center;
+
+      gap: 9px;
+
+      margin-bottom: 30px;
+    }
+
+
+    .category {
+      border: 1px solid #e4dfd8;
+
+      background: #ffffff;
+
+      color: #666;
+
+      padding: 9px 16px;
+
+      border-radius: 999px;
+
+      font-size: 14px;
+
+      font-weight: 600;
+
+      cursor: pointer;
+
+      transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+    }
+
+
+    .category:hover {
+      border-color: #ff8a65;
+
+      color: #ff7043;
+
+      transform: translateY(-2px);
+    }
+
+
+    .category.active {
+      background: #ff7043;
+
+      border-color: #ff7043;
+
+      color: #ffffff;
+
+      box-shadow:
+        0 4px 12px rgba(255, 112, 67, 0.2);
+    }
+
+
+    .category:active {
+      transform: scale(0.95);
+    }
+
+
+    /* =========================
+       추천 결과 카드
+    ========================= */
+
+    .result-card {
+      position: relative;
+
+      width: 100%;
+
+      min-height: 225px;
+
+      border-radius: 22px;
+
+      background: #fcfaf7;
+
+      border: 1px solid #eee8df;
+
+      display: flex;
+
+      flex-direction: column;
+
+      justify-content: center;
+
+      align-items: center;
+
+      margin-bottom: 22px;
+
+      overflow: hidden;
+
+      box-shadow:
+        0 6px 18px rgba(80, 60, 40, 0.05);
+    }
+
+
+    /*
+      카드 상단의 작은 포인트
+    */
+
+    .result-card::before {
+      content: "";
+
+      position: absolute;
+
+      top: 0;
+      left: 0;
+
+      width: 100%;
+      height: 4px;
+
+      background: #ff7043;
+    }
+
+
+    /* =========================
+       오늘의 추천 라벨
+    ========================= */
+
+    .result-label {
+      margin-bottom: 15px;
+
+      font-size: 13px;
+
+      font-weight: 600;
+
+      color: #ff7043;
+
+      letter-spacing: 0.5px;
+    }
+
+
+    /* =========================
+       기본 상태 아이콘
+    ========================= */
+
+    #foodEmoji {
+      font-size: 54px;
+
+      line-height: 1;
+
+      margin-bottom: 14px;
+    }
+
+
+    /* =========================
+       음식 이름
+    ========================= */
+
+    #result {
+      margin: 0;
+
+      font-size: 30px;
+
+      font-weight: 700;
+
+      color: #292929;
+
+      min-height: 36px;
+
+      letter-spacing: -0.8px;
+    }
+
+
+    /* 처음 상태 */
+
+    #result.empty {
+      font-size: 20px;
+
+      font-weight: 500;
+
+      color: #999;
+
+      letter-spacing: 0;
+    }
+
+
+    /* =========================
+       결과 등장 애니메이션
+    ========================= */
+
+    .result-card.show {
+      animation: resultShow 0.45s ease;
+    }
+
+
+    @keyframes resultShow {
+
+      0% {
+        opacity: 0;
+
+        transform:
+          translateY(8px)
+          scale(0.97);
+      }
+
+      60% {
+        transform:
+          translateY(-2px)
+          scale(1.01);
+      }
+
+      100% {
+        opacity: 1;
+
+        transform:
+          translateY(0)
+          scale(1);
+      }
+
+    }
+
+
+    /* =========================
+       버튼 공통
+    ========================= */
+
+    #recommendButton,
+    #retryButton {
+
+      width: 100%;
+
+      border: none;
+
+      border-radius: 14px;
+
+      padding: 15px;
+
+      font-size: 16px;
+
+      font-weight: 700;
+
+      cursor: pointer;
+
+      transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        opacity 0.2s ease;
+    }
+
+
+    /* =========================
+       메뉴 추천받기
+    ========================= */
+
+    #recommendButton {
+
+      background: #ff7043;
+
+      color: #ffffff;
+
+      box-shadow:
+        0 6px 14px rgba(255, 112, 67, 0.22);
+    }
+
+
+    #recommendButton:hover {
+
+      background: #f4511e;
+
+      transform: translateY(-2px);
+
+      box-shadow:
+        0 8px 18px rgba(255, 112, 67, 0.27);
+    }
+
+
+    /* =========================
+       다른 메뉴 추천
+    ========================= */
+
+    #retryButton {
+    display: none;
+    background: #fff0eb;
+    color: #e85d3f;
+    box-shadow: none;
+    }
+
+    #retryButton:hover {
+    background: #ffe3db;
+    }
+
+
+    /* =========================
+       버튼 비활성화
+    ========================= */
+
+    button:disabled {
+
+      cursor: default;
+
+      opacity: 0.6;
+
+      transform: none !important;
+    }
+
+
+    /* =========================
+       모바일
+    ========================= */
+
+    @media (max-width: 500px) {
+
+      body {
+        padding: 15px;
+      }
+
+
+      .app {
+        padding: 30px 20px;
+
+        border-radius: 22px;
+      }
+
+
+      h1 {
+        font-size: 28px;
+      }
+
+
+      .subtitle {
+        font-size: 14px;
+
+        margin-bottom: 26px;
+      }
+
+
+      .category {
+        padding: 8px 13px;
+
+        font-size: 13px;
+      }
+
+
+      .result-card {
+        min-height: 210px;
+      }
+
+
+      #foodEmoji {
+        font-size: 50px;
+      }
+
+
+      #result {
+        font-size: 26px;
+      }
+
+    }
+
+  </style>
+</head>
+
+
+<body>
+
+
+  <div class="app">
+
+
+    <!-- =========================
+         제목
+    ========================= -->
+
+    <h1>
+      오늘 뭐 먹지?
+    </h1>
+
+
+    <div class="subtitle">
+      카테고리를 선택하고 오늘의 메뉴를 골라보세요.
+    </div>
+
+
+
+    <!-- =========================
+         카테고리
+    ========================= -->
+
+    <div class="categories">
+
+      <button
+        class="category active"
+        onclick="selectCategory('전체', this)">
+        전체
+      </button>
+
+
+      <button
+        class="category"
+        onclick="selectCategory('한식', this)">
+        한식
+      </button>
+
+
+      <button
+        class="category"
+        onclick="selectCategory('중식', this)">
+        중식
+      </button>
+
+
+      <button
+        class="category"
+        onclick="selectCategory('일식', this)">
+        일식
+      </button>
+
+
+      <button
+        class="category"
+        onclick="selectCategory('양식', this)">
+        양식
+      </button>
+
+
+      <button
+        class="category"
+        onclick="selectCategory('분식', this)">
+        분식
+      </button>
+
+
+      <button
+        class="category"
+        onclick="selectCategory('아시안', this)">
+        아시안
+      </button>
+
+    </div>
+
+
+
+    <!-- =========================
+         추천 결과
+    ========================= -->
+
+    <div
+      class="result-card"
+      id="resultCard">
+
+
+      <div class="result-label">
+        오늘의 추천
+      </div>
+
+
+      <div id="foodEmoji">
+        🍽️
+      </div>
+
+
+      <div
+        id="result"
+        class="empty">
+
+        오늘은 뭘 먹을까요?
+
+      </div>
+
+
+    </div>
+
+
+
+    <!-- =========================
+         첫 추천 버튼
+    ========================= -->
+
+    <button
+      id="recommendButton"
+      onclick="recommendFood()">
+
+      메뉴 추천받기
+
+    </button>
+
+
+
+    <!-- =========================
+         다른 메뉴 추천
+    ========================= -->
+
+    <button
+      id="retryButton"
+      onclick="recommendFood()">
+
+      다른 메뉴 추천
+
+    </button>
+
+
+  </div>
+
+
+
+  <script>
+
+
+    /* =========================
+       음식 목록
+    ========================= */
+
+    const foods = [
+
+      /* 한식 */
+
+      { name: "비빔밥", category: "한식" },
+      { name: "삼겹살", category: "한식" },
+      { name: "목살", category: "한식" },
+      { name: "항정살", category: "한식" },
+      { name: "갈비", category: "한식" },
+      { name: "돼지갈비", category: "한식" },
+      { name: "소불고기", category: "한식" },
+      { name: "보쌈", category: "한식" },
+      { name: "족발", category: "한식" },
+      { name: "닭갈비", category: "한식" },
+      { name: "닭볶음탕", category: "한식" },
+      { name: "닭한마리", category: "한식" },
+      { name: "김치찌개", category: "한식" },
+      { name: "된장찌개", category: "한식" },
+      { name: "순두부찌개", category: "한식" },
+      { name: "부대찌개", category: "한식" },
+      { name: "청국장", category: "한식" },
+      { name: "감자탕", category: "한식" },
+      { name: "육개장", category: "한식" },
+      { name: "설렁탕", category: "한식" },
+      { name: "갈비탕", category: "한식" },
+      { name: "순대국", category: "한식" },
+      { name: "돼지국밥", category: "한식" },
+      { name: "제육볶음", category: "한식" },
+      { name: "오징어볶음", category: "한식" },
+      { name: "낙지볶음", category: "한식" },
+      { name: "두루치기", category: "한식" },
+      { name: "장어구이", category: "한식" },
+      { name: "물냉면", category: "한식" },
+      { name: "비빔냉면", category: "한식" },
+      { name: "막국수", category: "한식" },
+      { name: "칼국수", category: "한식" },
+      { name: "수제비", category: "한식" },
+      { name: "생선구이", category: "한식" },
+      { name: "갈치조림", category: "한식" },
+      { name: "고등어구이", category: "한식" },
+      { name: "아귀찜", category: "한식" },
+      { name: "해물찜", category: "한식" },
+
+
+      /* 중식 */
+
+      { name: "짜장면", category: "중식" },
+      { name: "짬뽕", category: "중식" },
+      { name: "볶음짬뽕", category: "중식" },
+      { name: "볶음밥", category: "중식" },
+      { name: "군만두", category: "중식" },
+      { name: "딤섬", category: "중식" },
+      { name: "탕수육", category: "중식" },
+      { name: "깐풍기", category: "중식" },
+      { name: "유린기", category: "중식" },
+      { name: "칠리새우", category: "중식" },
+      { name: "마파두부", category: "중식" },
+      { name: "마라탕", category: "중식" },
+      { name: "마라샹궈", category: "중식" },
+      { name: "탄탄면", category: "중식" },
+
+
+      /* 일식 */
+
+      { name: "초밥", category: "일식" },
+      { name: "회", category: "일식" },
+      { name: "라멘", category: "일식" },
+      { name: "우동", category: "일식" },
+      { name: "소바", category: "일식" },
+      { name: "돈까스", category: "일식" },
+      { name: "규동", category: "일식" },
+      { name: "오야코동", category: "일식" },
+      { name: "가츠동", category: "일식" },
+      { name: "카레", category: "일식" },
+      { name: "연어덮밥", category: "일식" },
+      { name: "장어덮밥", category: "일식" },
+      { name: "텐동", category: "일식" },
+      { name: "텐푸라", category: "일식" },
+      { name: "야키니쿠", category: "일식" },
+      { name: "오코노미야키", category: "일식" },
+
+
+      /* 양식 */
+
+      { name: "피자", category: "양식" },
+      { name: "파스타", category: "양식" },
+      { name: "스테이크", category: "양식" },
+      { name: "함박스테이크", category: "양식" },
+      { name: "리조또", category: "양식" },
+      { name: "샐러드", category: "양식" },
+      { name: "샌드위치", category: "양식" },
+      { name: "핫도그", category: "양식" },
+      { name: "라자냐", category: "양식" },
+
+
+      /* 분식 */
+
+      { name: "떡볶이", category: "분식" },
+      { name: "김밥", category: "분식" },
+      { name: "만두", category: "분식" },
+      { name: "어묵", category: "분식" },
+      { name: "튀김", category: "분식" },
+      { name: "쫄면", category: "분식" },
+      { name: "라볶이", category: "분식" },
+
+
+      /* 아시안 */
+
+      { name: "쌀국수", category: "아시안" },
+      { name: "분짜", category: "아시안" },
+      { name: "팟타이", category: "아시안" },
+      { name: "나시고랭", category: "아시안" },
+      { name: "미고랭", category: "아시안" },
+      { name: "팟카파오", category: "아시안" },
+      { name: "그린커리", category: "아시안" },
+      { name: "똠얌꿍", category: "아시안" },
+      { name: "락사", category: "아시안" },
+
+
+      /* 치킨
+         전체에서만 등장 */
+
+      { name: "치킨", category: "치킨" },
+      { name: "닭강정", category: "치킨" },
+      { name: "파닭", category: "치킨" },
+      { name: "치킨텐더", category: "치킨" }
+
+    ];
+
+
+    /* 현재 선택 카테고리 */
+
+    let selectedCategory = "전체";
+
+
+    /* 추천 중인지 확인 */
+
+    let isSelecting = false;
+
+
+    /* =========================
+       카테고리 선택
+    ========================= */
+
+    function selectCategory(category, button) {
+
+      if (isSelecting) {
+        return;
+      }
+
+
+      selectedCategory = category;
+
+
+      /* 기존 active 제거 */
+
+      document
+        .querySelectorAll(".category")
+        .forEach(function(item) {
+
+          item.classList.remove("active");
+
+        });
+
+
+      /* 현재 active */
+
+      button.classList.add("active");
+
+
+      /* 결과 카드 초기화 */
+
+      const result =
+        document.getElementById("result");
+
+      const foodEmoji =
+        document.getElementById("foodEmoji");
+
+      const resultCard =
+        document.getElementById("resultCard");
+
+
+      foodEmoji.textContent = "🍽️";
+
+      foodEmoji.style.display = "block";
+
+
+      result.textContent =
+        "오늘은 뭘 먹을까요?";
+
+
+      result.classList.add("empty");
+
+
+      resultCard.classList.remove("show");
+
+
+      /* 버튼도 처음 상태로 */
+
+      document.getElementById(
+        "recommendButton"
+      ).style.display = "block";
+
+
+      document.getElementById(
+        "retryButton"
+      ).style.display = "none";
+
+    }
+
+
+    /* =========================
+       메뉴 추천
+    ========================= */
+
+    function recommendFood() {
+
+      if (isSelecting) {
+        return;
+      }
+
+
+      isSelecting = true;
+
+
+      const recommendButton =
+        document.getElementById(
+          "recommendButton"
+        );
+
+
+      const retryButton =
+        document.getElementById(
+          "retryButton"
+        );
+
+
+      const result =
+        document.getElementById(
+          "result"
+        );
+
+
+      const foodEmoji =
+        document.getElementById(
+          "foodEmoji"
+        );
+
+
+      const resultCard =
+        document.getElementById(
+          "resultCard"
+        );
+
+
+      /* 버튼 잠금 */
+
+      recommendButton.disabled = true;
+
+      retryButton.disabled = true;
+
+
+      /* =========================
+         메뉴 필터링
+      ========================= */
+
+      let filteredFoods;
+
+
+      if (selectedCategory === "전체") {
+
+        filteredFoods = foods;
+
+      } else {
+
+        filteredFoods =
+          foods.filter(function(food) {
+
+            return food.category === selectedCategory;
+
+          });
+
+      }
+
+
+      /* 랜덤 선택 */
+
+      const selectedFood =
+        filteredFoods[
+          Math.floor(
+            Math.random() *
+            filteredFoods.length
+          )
+        ];
+
+
+      /* 기존 애니메이션 제거 */
+
+      resultCard.classList.remove("show");
+
+
+      /* 결과 표시 */
+
+      setTimeout(function() {
+
+
+        /*
+          추천 결과에서는
+          기본 🍽️ 아이콘 숨김
+        */
+
+        foodEmoji.style.display =
+          "none";
+
+
+        result.textContent =
+          selectedFood.name;
+
+
+        result.classList.remove(
+          "empty"
+        );
+
+
+        resultCard.classList.add(
+          "show"
+        );
+
+
+        /*
+          첫 추천 버튼 숨김
+        */
+
+        recommendButton.style.display =
+          "none";
+
+
+        /*
+          다른 메뉴 추천 표시
+        */
+
+        retryButton.style.display =
+          "block";
+
+
+        recommendButton.disabled =
+          false;
+
+
+        retryButton.disabled =
+          false;
+
+
+        isSelecting = false;
+
+
+      }, 400);
+
+    }
+
+  </script>
+
+</body>
+</html>
